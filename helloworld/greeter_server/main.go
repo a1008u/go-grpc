@@ -1,16 +1,15 @@
-package greeter_server
+package main
 
 import (
 	"context"
+	pb "github.com/a1008u/go-grpc/helloworld"
+	"google.golang.org/grpc"
 	"log"
 	"net"
-
-	"google.golang.org/grpc"
-
 )
 
 const (
-	port = ":50051"
+	port = ":50052"
 )
 
 type server struct{}
@@ -35,3 +34,4 @@ func main() {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
+

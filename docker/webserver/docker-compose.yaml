@@ -1,0 +1,21 @@
+version: '3' # composeファイルのバーション指定
+services:
+  grpc_go_webserver_client:
+    restart: always
+    build:
+      context: ../..
+      dockerfile: helloworld/greeter_client/Dockerfile_client
+    ports:
+      - "50051:50051"
+    depends_on:
+      - grpc_go_webserver_server
+    environment:
+      - SERVER_HOST=grpc_go_webserver_server:50052
+
+  grpc_go_webserver_server:
+    restart: always
+    build:
+      context: ../..
+      dockerfile: helloworld/greeter_server/Dockerfile_server
+    ports:
+      - "50052:50052"

@@ -1,0 +1,17 @@
+# Dockerfile for gRPC Go
+FROM golang:1.14
+
+ENV PKG_PATH /go/src/github.com/a1008u/go-grpc
+WORKDIR $PKG_PATH
+ENV GO111MODULE on
+
+# コンテナログイン時のディレクトリ指定
+COPY . $PKG_PATH
+
+COPY go.mod .
+COPY go.sum .
+
+RUN go mod download
+COPY . .
+
+CMD ["go", "run", "helloworld/greeter_server/main.go"]
