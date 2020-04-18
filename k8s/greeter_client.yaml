@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-client
+  labels:
+    app: client
+spec:
+  selector:
+    matchLabels:
+      app: client
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+        - name: client
+          image: a1008u/webserver_grpc_go_webserver_client:latest
+          ports:
+            - name: s-c-service
+              containerPort: 50051
+          env:
+            - name: SERVER_HOST
+              value: s-s-service:50052
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: s-c-service
+spec:
+  selector:
+    app: client
+  ports:
+    - name: http
+      port: 50051
+      nodePort: 30070
+  type: NodePort
