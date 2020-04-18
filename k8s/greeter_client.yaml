@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: a1008u/webserver_grpc_go_webserver_client:latest
+          image: a1008u/webserver_grpc_go_webserver_client:v1.0.1
           ports:
             - name: s-c-service
               containerPort: 50051

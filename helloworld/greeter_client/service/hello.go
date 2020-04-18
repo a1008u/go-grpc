@@ -4,8 +4,6 @@ import (
 	"context"
 	pb "github.com/a1008u/go-grpc/helloworld"
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/dto"
-	"github.com/a1008u/go-grpc/helloworld/greeter_client/util"
-	"google.golang.org/grpc"
 	"log"
 	"os"
 	"time"
@@ -16,17 +14,7 @@ const (
 	port = ":50051"
 )
 
-func Hello() (*dto.HelloReply, bool) {
-	// gRPCコネクションの作成
-	address := util.GetGrcpAddress()
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-		return nil, false
-	}
-	defer conn.Close()
-	c := pb.NewGreeterClient(conn)
-
+func Hello(c pb.GreeterClient) (*dto.HelloReply, bool) {
 	// 引数の準備
 	name := defaultName
 	if len(os.Args) > 1 {

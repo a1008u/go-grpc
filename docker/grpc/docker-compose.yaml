@@ -7,4 +7,4 @@ services:
       dockerfile: Dockerfile
     tty: true # コンテナの起動永続化
     volumes:
-      - ..:/go/src/work # マウントディレクトリ指定
+      - ../..:/go/src/work # マウントディレクトリ指定
