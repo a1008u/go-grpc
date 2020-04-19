@@ -14,9 +14,16 @@ spec:
       labels:
         app: server
     spec:
+      # podに対するセキュリティ対策
+      securityContext:
+        runAsUser: 1000
+        runAsNonRoot: false
       containers:
         - name: server
-          image: a1008u/webserver_grpc_go_webserver_server:v1.0.1
+          image: a1008u/webserver_grpc_go_webserver_server:v1.0.2
+          # コンテナに対するセキュリティ対策
+          securityContext:
+            readOnlyRootFilesystem: true
           ports:
             - name: s-s-service
               containerPort: 50052

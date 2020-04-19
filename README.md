@@ -7,14 +7,20 @@ protoc -I helloworld/ helloworld/helloworld.proto --go_out=plugins=grpc:hellowor
 ```
 
 
+
 # docker側
 ```docker
+# イメージIDの確認
+docker images webserver_grpc_go_webserver_client
+docker images webserver_grpc_go_webserver_server
 
-docker tag 3f3c23ef659b a1008u/webserver_grpc_go_webserver_client:v1.0.1
-docker tag cc570ad3da71 a1008u/webserver_grpc_go_webserver_server:v1.0.1
+# tagの作成
+docker tag イメージid a1008u/webserver_grpc_go_webserver_client:v1.0.2
+docker tag イメージid a1008u/webserver_grpc_go_webserver_server:v1.0.2
 
-docker push a1008u/webserver_grpc_go_webserver_client:v1.0.1
-docker push a1008u/webserver_grpc_go_webserver_server:v1.0.1
+# docker hubにpush
+docker push a1008u/webserver_grpc_go_webserver_client:v1.0.2
+docker push a1008u/webserver_grpc_go_webserver_server:v1.0.2
 ```
 
 
@@ -31,8 +37,24 @@ kubectl create --save-config -f greeter_server.yaml
 kubectl delete -f greeter_server.yaml
 kubectl delete -f greeter_client.yaml
 
+# apply
 kubectl apply -f greeter_client.yaml
 kubectl apply -f greeter_server.yaml
+
+# yamlの更新を確認
+kubectl apply -f greeter_client.yaml --server-dry-run
+kubectl diff -f greeter_client.yaml
+
+kubectl apply -f greeter_server.yaml --server-dry-run
+kubectl diff -f greeter_server.yaml
+```
+
+
+# minikube側  
+## /command
+```minikube
+# dashboard
+minikube dashboard --url
 
 # ip確認
 minikube ip

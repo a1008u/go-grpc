@@ -1,17 +1,23 @@
-# Dockerfile for gRPC Go
-FROM golang:1.14
+# Dockerfile for gRPC Go_server
+# first stage
+FROM golang:1.14 as builder
 
 ENV PKG_PATH /go/src/github.com/a1008u/go-grpc
 WORKDIR $PKG_PATH
 ENV GO111MODULE on
 
-# コンテナログイン時のディレクトリ指定
 COPY . $PKG_PATH
-
-COPY go.mod .
-COPY go.sum .
-
 RUN go mod download
-COPY . .
 
-CMD ["go", "run", "helloworld/greeter_server/main.go"]
+COPY helloworld/greeter_server .
+RUN CGO_ENABLED=0 GOOS=linux go build -o greeter_server/app
+
+
+# second stage
+FROM scratch
+COPY --from=builder /go/src/github.com/a1008u/go-grpc/greeter_server/app greeter_server/app
+
+# busybox経由でshなどを実行できるようにする
+COPY --from=busybox:1.31.1 /bin/busybox /bin/busybox
+
+CMD ["greeter_server/app"]
