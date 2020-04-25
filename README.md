@@ -37,6 +37,9 @@ kubectl create --save-config -f greeter_server.yaml
 kubectl delete -f greeter_server.yaml
 kubectl delete -f greeter_client.yaml
 
+# configMapの設定
+kubectl create -f config.yaml 
+
 # apply
 kubectl apply -f greeter_client.yaml
 kubectl apply -f greeter_server.yaml

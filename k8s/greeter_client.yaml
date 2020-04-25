@@ -29,7 +29,12 @@ spec:
               containerPort: 50051
           env:
             - name: SERVER_HOST
-              value: s-s-service:50052
+              valueFrom:
+                configMapKeyRef:
+                  name: server-host
+                  key: target.grpc.server
+#            - name: SERVER_HOST
+#              value: s-s-service:50052
 
 ---
 apiVersion: v1
