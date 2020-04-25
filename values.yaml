@@ -1,0 +1,4 @@
+client:
+  name: s-c-service2
+server:
+  name: s-s-service2

@@ -62,3 +62,28 @@ minikube dashboard --url
 # ip確認
 minikube ip
 ```
+
+---
+
+# Helm側
+## command
+```helm
+helm package go-grpc
+
+heml create go-grpc
+
+# templatesの確認 -> helmでビルド + upgrade
+helm install . --name-template go-grpc --debug --dry-run
+helm install --name-template go-grpc .
+helm upgrade go-grpc .
+helm list 
+
+# helmのrepoでstableを確認する
+helm search repo stable
+
+```
+
+## 参考
+[hellmの公式](https://helm.sh/)  
+[事実上の標準ツールとなっているKubernetes向けデプロイツール「Helm」入門](https://knowledge.sakura.ad.jp/23603/)  
+[Helm VS Kustomize](https://qiita.com/ttr_tkmkb/items/638ad7acbc3b6fa537df)
