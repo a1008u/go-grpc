@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name:  sample-client2
+  namespace: {{.Values.namespace.name}}
   labels:
     app: client
 spec:
@@ -26,26 +27,25 @@ spec:
             readOnlyRootFilesystem: true
           ports:
             - name: {{ .Values.client.name }}
-              containerPort: 50051
+              containerPort: {{.Values.client.clientport}}
           env:
             - name: SERVER_HOST
               valueFrom:
                 configMapKeyRef:
                   name: server-host2
                   key: target.grpc.server
-{{/*            - name: SERVER_HOST*/}}
-{{/*              value: s-s-service:50052*/}}
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.client.name }}
+  namespace: {{.Values.namespace.name}}
 spec:
   selector:
     app: client
   ports:
     - name: http
-      port: 50051
+      port: {{.Values.client.clientport}}
       nodePort: 30060
   type: NodePort

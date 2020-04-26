@@ -1,1 +1,9 @@
 .idea
+
+# 証明書系のignore
+docker/certfication/*/out
+docker/certfication/ca/ca.pem
+docker/certfication/ca/ca.crt
+docker/certfication/ca/ca.crl
+docker/certfication/ca/ca.seq
+!docker/certfication/*/out/.gitkeep

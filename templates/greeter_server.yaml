@@ -2,13 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sample-server2
+  namespace: {{.Values.namespace.name}}
   labels:
     app: server
 spec:
   selector:
     matchLabels:
       app: server
-  replicas: 1
+  replicas: 2
   template:
     metadata:
       labels:
@@ -25,17 +26,18 @@ spec:
           securityContext:
             readOnlyRootFilesystem: true
           ports:
-            - name: s-s-service2
-              containerPort: 50052
+            - name: {{ .Values.server.name }}
+              containerPort: {{.Values.server.serverport}}
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.server.name }}
+  namespace: {{.Values.namespace.name}}
 spec:
   selector:
     app: server
   ports:
-    - port: 50052
+    - port: {{.Values.server.serverport}}
       targetPort: {{ .Values.server.name }}
