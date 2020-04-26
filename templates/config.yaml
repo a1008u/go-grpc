@@ -2,5 +2,6 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: server-host2
+  namespace: {{.Values.namespace.name}}
 data:
-  target.grpc.server: s-s-service:50052
+  target.grpc.server: s-s-service2:50052

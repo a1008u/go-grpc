@@ -1,4 +1,8 @@
+namespace:
+  name: helm-greeter
 client:
   name: s-c-service2
+  clientport: 50051
 server:
   name: s-s-service2
+  serverport: 50052
