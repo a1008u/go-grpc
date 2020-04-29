@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	pb "github.com/a1008u/go-grpc/helloworld"
+	"github.com/a1008u/go-grpc/helloworld/greeter_server/interceptor"
 	"google.golang.org/grpc"
 	"io"
 	"log"
@@ -18,6 +19,7 @@ type server struct{}
 
 // SayHelloメソッドを実装
 func (s *server) SayHello(ctx context.Context, helloRequest *pb.HelloRequest) (*pb.HelloReply, error) {
+	//　time.Sleep(time.Millisecond * 3000)
 	log.Printf("Received: %v", helloRequest.Name)
 	return &pb.HelloReply{Message: "Hello " + helloRequest.Name}, nil
 }
@@ -90,8 +92,9 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	// サーバ起動
-	s := grpc.NewServer()
+	// サーバ起動(interceptorも一緒に設定しています。)
+	s := grpc.NewServer(grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor),
+		grpc.StreamInterceptor(interceptor.ServerStreamInterceptor))
 	pb.RegisterGreeterServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

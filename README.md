@@ -2,6 +2,7 @@
 ## /command
 ```zsh
 // .protoからpb.goは自動生成される。
+// protoc -I protoが存在するpathを指定　コンパイルするprotoファイルpath　作成ファイルの置き場を指定
 protoc -I proto/ proto/greet.proto --go_out=plugins=grpc:proto
 protoc -I helloworld/ helloworld/helloworld.proto --go_out=plugins=grpc:helloworld
 ```

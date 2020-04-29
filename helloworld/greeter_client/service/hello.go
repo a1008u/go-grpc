@@ -22,7 +22,14 @@ func Hello(c pb.GreeterClient) (*dto.HelloReply, bool) {
 	}
 
 	// contextの準備
+	// clientDeadline := time.Now().Add(time.Duration(2 * time.Second))
+
+	// timeoutの場合
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+	// timeoutとDeadlineの場合
+	// ctx, cancel := context.WithTimeout(context.Background(), 2 * time.Second)
+	// ctx, cancel := context.WithDeadline(context.Background(), clientDeadline)
 	defer cancel()
 
 	// SayHelloメソッドの呼び出し

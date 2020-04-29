@@ -6,6 +6,7 @@ import (
 	pb "github.com/a1008u/go-grpc/helloworld"
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/domain"
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/dto"
+	"github.com/a1008u/go-grpc/helloworld/greeter_client/interceptor"
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/service"
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/util"
 	"google.golang.org/grpc"
@@ -57,10 +58,12 @@ func grpchandlers(hr []*dto.HelloReply, w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+
+// Unary
 func grpcClient(w http.ResponseWriter, r *http.Request) {
 	// gRPCコネクションの作成
 	address := util.GetGrcpAddress()
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
@@ -79,7 +82,7 @@ func grpcClient(w http.ResponseWriter, r *http.Request) {
 func grpcClientStreamServer(w http.ResponseWriter, r *http.Request) {
 	// gRPCコネクションの作成
 	address := util.GetGrcpAddress()
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
@@ -95,9 +98,10 @@ func grpcClientStreamServer(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
 func grpcSideStreaming(w http.ResponseWriter, r *http.Request) {
 	address := util.GetGrcpAddress()
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithStreamInterceptor(interceptor.ClientStreamInterceptor))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
