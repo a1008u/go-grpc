@@ -2,13 +2,20 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	pb "github.com/a1008u/go-grpc/helloworld"
 	"github.com/a1008u/go-grpc/helloworld/greeter_server/interceptor"
+	epb "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	_ "google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"io"
 	"log"
 	"net"
+	"time"
 )
 
 const (
@@ -20,6 +27,40 @@ type server struct{}
 // SayHelloメソッドを実装
 func (s *server) SayHello(ctx context.Context, helloRequest *pb.HelloRequest) (*pb.HelloReply, error) {
 	//　time.Sleep(time.Millisecond * 3000)
+
+	// Client側からのメタデータ読み込み
+	md, metadataAvailable := metadata.FromIncomingContext(ctx)
+	if !metadataAvailable {
+		return nil, status.Errorf(codes.DataLoss, "UnaryEcho: failed to get metadata")
+	}
+	if t, ok := md["timestamp"]; ok {
+		fmt.Printf("timestamp from metadata:\n", md)
+		for i, e := range t {
+			fmt.Printf("====> Metadata %d. %s\n", i, e)
+		}
+	}
+
+	//　gRPCの引数の確認
+	if helloRequest.Name == "error" {
+		log.Printf("Order ID is invalid! -> Received Name %s", helloRequest.Name)
+
+		errorStatus := status.New(codes.InvalidArgument, "Invalid information received")
+		ds, err := errorStatus.WithDetails(
+			&epb.BadRequest_FieldViolation{
+				Field:"Name",
+				Description: fmt.Sprintf("Order Name received is not valid %s : ", helloRequest.Name),
+			},
+		)
+		if err != nil {
+			return nil, errorStatus.Err()
+		}
+
+		// Server側からのmetadataの返却
+		header := metadata.New(map[string]string{"location": "JP", "timestamp": time.Now().Format(time.StampNano)})
+		grpc.SendHeader(ctx, header)
+		return nil, ds.Err()
+	}
+
 	log.Printf("Received: %v", helloRequest.Name)
 	return &pb.HelloReply{Message: "Hello " + helloRequest.Name}, nil
 }
@@ -86,6 +127,7 @@ func (s *server) SayHelloStreaming(stream pb.Greeter_SayHelloStreamingServer) er
 }
 
 func main() {
+
 	// リッスン処理
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const (
@@ -71,7 +72,15 @@ func grpcClient(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 	c := pb.NewGreeterClient(conn)
 
-	hr, result := service.Hello(c)
+	var word string
+	if strings.Index(r.URL.Path, "error") != -1 {
+		word = "error"
+	} else {
+		word = "world"
+	}
+
+	hr, result := service.Hello(c, word)
+
 	if result {
 		grpchandler(hr, w, r)
 	} else {
@@ -139,6 +148,7 @@ func grpcStreaming(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/", handler)
 	http.HandleFunc("/grpc", grpcClient)
+	http.HandleFunc("/error", grpcClient)
 	http.HandleFunc("/grpc2", grpcClientStreamServer)
 	http.HandleFunc("/grpc3", grpcSideStreaming)
 	http.HandleFunc("/grpc4", grpcStreaming)
