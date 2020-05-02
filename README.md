@@ -42,12 +42,12 @@ docker images webserver_grpc_go_webserver_client
 docker images webserver_grpc_go_webserver_server
 
 # tagの作成
-docker tag イメージid a1008u/webserver_grpc_go_webserver_client:v1.0.3
-docker tag イメージid a1008u/webserver_grpc_go_webserver_server:v1.0.3
+docker tag webserver_grpc_go_webserver_client a1008u/webserver_grpc_go_webserver_client:v1.0.4
+docker tag webserver_grpc_go_webserver_server a1008u/webserver_grpc_go_webserver_server:v1.0.4
 
 # docker hubにpush
-docker push a1008u/webserver_grpc_go_webserver_client:v1.0.3
-docker push a1008u/webserver_grpc_go_webserver_server:v1.0.3
+docker push a1008u/webserver_grpc_go_webserver_client:v1.0.4
+docker push a1008u/webserver_grpc_go_webserver_server:v1.0.4
 ```
 
 
@@ -68,8 +68,8 @@ kubectl delete -f greeter_client.yaml
 kubectl create -f config.yaml 
 
 # apply
-kubectl apply -f greeter_client.yaml
-kubectl apply -f greeter_server.yaml
+kubectl apply -f greeter_client.yaml;
+kubectl apply -f greeter_server.yaml;
 
 # yamlの更新を確認
 kubectl apply -f greeter_client.yaml --server-dry-run
