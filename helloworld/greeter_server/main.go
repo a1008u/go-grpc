@@ -88,6 +88,11 @@ func (s *server) SayHello(ctx context.Context, helloRequest *pb.HelloRequest) (*
 // one to many
 // goroutine
 func (s *server) SayHelloServerSideStreaming (req *pb.HelloRequest, stream pb.Greeter_SayHelloServerSideStreamingServer)  error {
+
+	// trace用
+	_, span := trace.StartSpan(context.Background(), "ecommerce.GetProduct")
+	defer span.End()
+
 	coundown := 10
 	for coundown > 0 {
 		result := fmt.Sprintf("Hello  %s, %d.", req.Name, coundown)

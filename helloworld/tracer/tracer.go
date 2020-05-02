@@ -10,6 +10,7 @@ import (
 	"github.com/uber/jaeger-lib/metrics/prometheus"
 )
 
+var metricsFactory *prometheus.Factory
 
 func NewTracer(servicename string) (opentracing.Tracer, io.Closer, error) {
 	// load config from environment variables
@@ -36,7 +37,12 @@ func NewTracer(servicename string) (opentracing.Tracer, io.Closer, error) {
 	//	Param: 1.0,
 	//}
 	jLogger := log.StdLogger
-	metricsFactory := prometheus.New()
+	//metricsFactory := prometheus.New()
+	if nil == metricsFactory {
+		metricsFactory = prometheus.New()
+	}
+
+
 	return cfg.NewTracer(
 		config.Logger(jLogger),
 		config.Metrics(metricsFactory),

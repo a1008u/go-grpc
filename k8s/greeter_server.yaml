@@ -21,7 +21,7 @@ spec:
         runAsNonRoot: false
       containers:
         - name: server
-          image: a1008u/webserver_grpc_go_webserver_server:v1.0.2
+          image: a1008u/webserver_grpc_go_webserver_server:v1.0.3
           # コンテナに対するセキュリティ対策
           securityContext:
             readOnlyRootFilesystem: true

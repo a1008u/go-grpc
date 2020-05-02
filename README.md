@@ -42,12 +42,12 @@ docker images webserver_grpc_go_webserver_client
 docker images webserver_grpc_go_webserver_server
 
 # tagの作成
-docker tag イメージid a1008u/webserver_grpc_go_webserver_client:v1.0.2
-docker tag イメージid a1008u/webserver_grpc_go_webserver_server:v1.0.2
+docker tag イメージid a1008u/webserver_grpc_go_webserver_client:v1.0.3
+docker tag イメージid a1008u/webserver_grpc_go_webserver_server:v1.0.3
 
 # docker hubにpush
-docker push a1008u/webserver_grpc_go_webserver_client:v1.0.2
-docker push a1008u/webserver_grpc_go_webserver_server:v1.0.2
+docker push a1008u/webserver_grpc_go_webserver_client:v1.0.3
+docker push a1008u/webserver_grpc_go_webserver_server:v1.0.3
 ```
 
 

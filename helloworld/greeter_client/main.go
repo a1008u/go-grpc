@@ -11,7 +11,7 @@ import (
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/util"
 	"github.com/a1008u/go-grpc/helloworld/tracer"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpcopentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -88,7 +88,7 @@ func grpcClient(w http.ResponseWriter, r *http.Request) {
 			grpc_middleware.ChainUnaryClient(
 				interceptor.Uac(),
 				grpcMetrics.UnaryClientInterceptor(),
-				grpcopentracing.UnaryClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+				grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithTracer(jaegertracer)),
 			),
 		),
 		//grpc.WithStreamInterceptor(grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)))
@@ -96,7 +96,7 @@ func grpcClient(w http.ResponseWriter, r *http.Request) {
 			grpc_middleware.ChainStreamClient(
 				interceptor.Sci(),
 				grpcMetrics.StreamClientInterceptor(),
-				grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+				//grpc_opentracing.StreamClientInterceptor(grpc_opentracing.WithTracer(jaegertracer)),
 			),
 		),
 	)
@@ -143,7 +143,7 @@ func grpcClientStreamServer(w http.ResponseWriter, r *http.Request) {
 			grpc_middleware.ChainStreamClient(
 				interceptor.Sci(),
 				grpcMetrics.StreamClientInterceptor(),
-				grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+				grpc_opentracing.StreamClientInterceptor(grpc_opentracing.WithTracer(jaegertracer)),
 			),
 		),
 	)
