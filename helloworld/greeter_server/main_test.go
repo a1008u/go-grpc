@@ -1,3 +1,16 @@
+/*
+
+THE PURPOSE
+Server側のテスト<br />
+ - test用のserverを起動させる
+ - testを実施する
+
+CREATED BY
+  a1008u
+
+CREATED AT
+  2020/05/02
+*/
 package main
 
 import (
@@ -13,6 +26,7 @@ import (
 const bufSize = 1024 * 1024
 
 var lis *bufconn.Listener
+
 
 func init() {
 	lis = bufconn.Listen(bufSize)
@@ -30,6 +44,8 @@ func bufDialer(ctx context.Context, address string) (net.Conn, error) {
 }
 
 func TestSayHello(t *testing.T) {
+
+	// test
 	ctx := context.Background()
 	// grpc.WithContextDialer(bufDialer)は、bufconnで作成したgrpc serverのdialを利用するようにする。
 	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), grpc.WithInsecure())

@@ -7,7 +7,33 @@ protoc -I proto/ proto/greet.proto --go_out=plugins=grpc:proto
 protoc -I helloworld/ helloworld/helloworld.proto --go_out=plugins=grpc:helloworld
 ```
 
+## client用のmockテスト作成コマンド
+```sh
+go get github.com/golang/mock/gomock
+go get github.com/golang/mock/mockgen
 
+mockgen --version
+mockgen -destination=mocks/helloworld_mock.go -package=mocks github.com/a1008u/go-grpc/helloworld GreeterClient 
+```
+
+## 負荷テストのツール
+[ghz](https://ghz.sh/)
+
+## OpenCensusについて
+```shell script
+go get -u go.opencensus.io
+```
+
+## Prometheusについて
+```shell script
+go get github.com/prometheus/client_golang/prometheus;
+go get github.com/prometheus/client_golang/prometheus/promauto;
+go get github.com/prometheus/client_golang/prometheus/promhttp;
+go get github.com/grpc-ecosystem/go-grpc-prometheus
+```
+
+## grpcの参考URL
+[awesome-grpc](https://github.com/grpc-ecosystem/awesome-grpc)
 
 # docker側
 ```docker

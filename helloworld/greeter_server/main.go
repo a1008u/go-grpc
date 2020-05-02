@@ -2,10 +2,19 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	pb "github.com/a1008u/go-grpc/helloworld"
 	"github.com/a1008u/go-grpc/helloworld/greeter_server/interceptor"
+	"github.com/a1008u/go-grpc/helloworld/tracer"
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/opentracing/opentracing-go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opencensus.io/examples/exporter"
+	"go.opencensus.io/plugin/ocgrpc"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/trace"
+	"go.opencensus.io/zpages"
 	epb "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -15,7 +24,9 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"time"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 )
 
 const (
@@ -27,6 +38,13 @@ type server struct{}
 // SayHelloメソッドを実装
 func (s *server) SayHello(ctx context.Context, helloRequest *pb.HelloRequest) (*pb.HelloReply, error) {
 	//　time.Sleep(time.Millisecond * 3000)
+
+	// trace用
+	ctx, span := trace.StartSpan(ctx, "ecommerce.GetProduct")
+	defer span.End()
+
+	// prometheusの設定
+	customizedCounterMetric.WithLabelValues(helloRequest.GetName()).Inc()
 
 	// Client側からのメタデータ読み込み
 	md, metadataAvailable := metadata.FromIncomingContext(ctx)
@@ -128,18 +146,82 @@ func (s *server) SayHelloStreaming(stream pb.Greeter_SayHelloStreamingServer) er
 
 func main() {
 
+	// OpenCensusの設定
+	// Start z-Pages server.
+	go func() {
+		mux := http.NewServeMux()
+		zpages.Handle(mux, "/debug")
+		log.Fatal(http.ListenAndServe("127.0.0.1:8081", mux))
+	}()
+	// Register stats and trace exporters to export
+	// the collected data.
+	view.RegisterExporter(&exporter.PrintExporter{})
+	// Register the views to collect server request count.
+	if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
+		log.Fatal(err)
+	}
+
+
 	// リッスン処理
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	// Create a HTTP server for prometheus.
+	httpServer := &http.Server{Handler: promhttp.HandlerFor(reg, promhttp.HandlerOpts{}), Addr: ":9092"}
+
+
+	// Tracer(OpenCensusのライブラリを利用)
+	// initialize jaegertracer
+	jaegertracer, closer, err := tracer.NewTracer("product_mgt")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer closer.Close()
+	opentracing.SetGlobalTracer(jaegertracer)
+
+	// initialize grpc server with chained interceptors
 	// サーバ起動(interceptorも一緒に設定しています。)
-	s := grpc.NewServer(grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor),
-		grpc.StreamInterceptor(interceptor.ServerStreamInterceptor))
+	s := grpc.NewServer(
+		//grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor),
+		grpc.UnaryInterceptor(
+			grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(jaegertracer)),
+		),
+		grpc.StreamInterceptor(interceptor.ServerStreamInterceptor),
+		grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	pb.RegisterGreeterServer(s, &server{})
+
+	// Initialize all metrics.
+	// Start your http server for prometheus.
+	grpcMetrics.InitializeMetrics(s)
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil {
+			log.Fatal("Unable to start a http server.")
+		}
+	}()
+
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+}
+
+// prometheusの設定
+var (
+	// Create a metrics registry.
+	reg = prometheus.NewRegistry()
+
+	// Create some standard server metrics.
+	grpcMetrics = grpc_prometheus.NewServerMetrics()
+
+	customizedCounterMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "product_mgt_server_handle_count",
+		Help: "Total number of RPCs handled on the server.",
+	}, []string{"name"})
+)
+
+func init() {
+	// Register standard server metrics and customized metrics to registry.
+	reg.MustRegister(grpcMetrics, customizedCounterMetric)
 }
 

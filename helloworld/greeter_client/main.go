@@ -9,6 +9,14 @@ import (
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/interceptor"
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/service"
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/util"
+	"github.com/a1008u/go-grpc/helloworld/tracer"
+	grpcopentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opencensus.io/examples/exporter"
+	"go.opencensus.io/plugin/ocgrpc"
+	"go.opencensus.io/stats/view"
 	"google.golang.org/grpc"
 	"log"
 	"net/http"
@@ -64,7 +72,24 @@ func grpchandlers(hr []*dto.HelloReply, w http.ResponseWriter, r *http.Request) 
 func grpcClient(w http.ResponseWriter, r *http.Request) {
 	// gRPCコネクションの作成
 	address := util.GetGrcpAddress()
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor))
+
+	jaegertracer, closer, err := tracer.NewTracer("product_mgt")
+	if err != nil {
+		log.Println("eeeerrrrorr")
+	}
+	defer closer.Close()
+
+	conn, err := grpc.Dial(address, grpc.WithInsecure(),
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(grpcMetrics.UnaryClientInterceptor()),
+		grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor),
+		grpc.WithStreamInterceptor(
+			grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+		),
+		grpc.WithUnaryInterceptor(
+			grpcopentracing.UnaryClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+		),
+		)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
@@ -91,7 +116,10 @@ func grpcClient(w http.ResponseWriter, r *http.Request) {
 func grpcClientStreamServer(w http.ResponseWriter, r *http.Request) {
 	// gRPCコネクションの作成
 	address := util.GetGrcpAddress()
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor))
+	conn, err := grpc.Dial(address, grpc.WithInsecure(),
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(grpcMetrics.UnaryClientInterceptor()),
+		grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
@@ -110,7 +138,10 @@ func grpcClientStreamServer(w http.ResponseWriter, r *http.Request) {
 
 func grpcSideStreaming(w http.ResponseWriter, r *http.Request) {
 	address := util.GetGrcpAddress()
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithStreamInterceptor(interceptor.ClientStreamInterceptor))
+	conn, err := grpc.Dial(address, grpc.WithInsecure(),
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(grpcMetrics.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(interceptor.ClientStreamInterceptor))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
@@ -128,7 +159,10 @@ func grpcSideStreaming(w http.ResponseWriter, r *http.Request) {
 
 func grpcStreaming(w http.ResponseWriter, r *http.Request) {
 	address := util.GetGrcpAddress()
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address, grpc.WithInsecure(),
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(grpcMetrics.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(interceptor.ClientStreamInterceptor))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
@@ -145,12 +179,52 @@ func grpcStreaming(w http.ResponseWriter, r *http.Request) {
 
 }
 
+var (
+	grpcMetrics *grpc_prometheus.ClientMetrics
+)
+
 func main() {
+
+	// OpenCensusの設定
+	// Register stats and trace exporters to export
+	// the collected data.
+	view.RegisterExporter(&exporter.PrintExporter{})
+	// Register the view to collect gRPC client stats.
+	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
+		log.Fatal(err)
+	}
+
+	// prometheusの設定
+	// Create a metrics registry.
+	reg := prometheus.NewRegistry()
+	// Create some standard client metrics.
+	grpcMetrics = grpc_prometheus.NewClientMetrics()
+	// Register client metrics to registry.
+	reg.MustRegister(grpcMetrics)
+	// Create a HTTP server for prometheus.
+	httpServer := &http.Server{Handler: promhttp.HandlerFor(reg, promhttp.HandlerOpts{}), Addr: ":9094"}
+	// Start your http server for prometheus.
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil {
+			log.Fatal("Unable to start a http server.")
+		}
+	}()
+
+	//http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	http.HandleFunc("/", handler)
 	http.HandleFunc("/grpc", grpcClient)
 	http.HandleFunc("/error", grpcClient)
 	http.HandleFunc("/grpc2", grpcClientStreamServer)
 	http.HandleFunc("/grpc3", grpcSideStreaming)
 	http.HandleFunc("/grpc4", grpcStreaming)
-	http.ListenAndServe(":50051", nil)
+
+	// client側のserver実行
+	if err := http.ListenAndServe(":50051", nil); err != nil {
+		log.Fatal("Unable to start a http server.")
+	}
+	//go func() {
+	//	if err := http.ListenAndServe(":50054", nil); err != nil {
+	//		log.Fatal("Unable to start a http server.")
+	//	}
+	//}()
 }

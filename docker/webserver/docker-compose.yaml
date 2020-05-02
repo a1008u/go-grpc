@@ -7,6 +7,9 @@ services:
       dockerfile: helloworld/greeter_client/Dockerfile_client
     ports:
       - "50051:50051"
+      - "50054:50054"
+      - "9094:9094"
+      - "6832:6831"
     depends_on:
       - grpc_go_webserver_server
     environment:
@@ -18,4 +21,6 @@ services:
       context: ../..
       dockerfile: helloworld/greeter_server/Dockerfile_server
     ports:
+      - "9092:9092"
       - "50052:50052"
+      - "6831:6831"
