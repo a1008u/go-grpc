@@ -6,6 +6,9 @@ import (
 	pb "github.com/a1008u/go-grpc/helloworld"
 	"github.com/a1008u/go-grpc/helloworld/greeter_server/interceptor"
 	"github.com/a1008u/go-grpc/helloworld/tracer"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,7 +29,6 @@ import (
 	"net"
 	"net/http"
 	"time"
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 )
 
 const (
@@ -183,12 +185,24 @@ func main() {
 
 	// initialize grpc server with chained interceptors
 	// サーバ起動(interceptorも一緒に設定しています。)
+	// interceptorを複数利用する場合はgrpc_middlewareのChainUnaryServerやChainStreamServerを利用する
 	s := grpc.NewServer(
-		//grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor),
+		// grpc.UnaryInterceptor(interceptor.UnaryServerInterceptor),
 		grpc.UnaryInterceptor(
-			grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(jaegertracer)),
+			grpc_middleware.ChainUnaryServer(
+				interceptor.Ux(),
+				grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(jaegertracer)),
+				grpc_recovery.UnaryServerInterceptor(),
+			),
 		),
-		grpc.StreamInterceptor(interceptor.ServerStreamInterceptor),
+		// grpc.StreamInterceptor(interceptor.ServerStreamInterceptor),
+		grpc.StreamInterceptor(
+			grpc_middleware.ChainStreamServer(
+				interceptor.Sx(),
+				grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(jaegertracer)),
+				grpc_recovery.StreamServerInterceptor(),
+			 ),
+		),
 		grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	pb.RegisterGreeterServer(s, &server{})
 

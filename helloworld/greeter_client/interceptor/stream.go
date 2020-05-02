@@ -42,3 +42,14 @@ func (w *wrappedStream) SendMsg(m interface{}) error {
 func newWrappedStream(s grpc.ClientStream) grpc.ClientStream {
 	return &wrappedStream{s}
 }
+
+func Sci(opts ...Option) grpc.StreamClientInterceptor {
+	return func(parentCtx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		log.Println("======= [Client Interceptor][grpc.StreamClientInterceptor] ", method)
+		s, err := streamer(parentCtx, desc, cc, method, opts...)
+		if err != nil {
+			return nil, err
+		}
+		return newWrappedStream(s), nil
+	}
+}

@@ -2,9 +2,7 @@ package interceptor
 
 import (
 	"context"
-	"github.com/a1008u/go-grpc/helloworld/tracer"
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	"github.com/opentracing/opentracing-go"
+	"fmt"
 	"google.golang.org/grpc"
 	"log"
 )
@@ -13,23 +11,43 @@ import (
 func UnaryServerInterceptor(ctx context.Context, req interface{},
 	info *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler) (interface{}, error) {
-	// 前処理：preprocessing
-	log.Printf("======= [Server Interceptor]  FullMethod is %s ===== Serer is %s", info.FullMethod, info.Server)
 
-	// Tracer
-	// initialize jaegertracer
-	jaegertracer, closer, err := tracer.NewTracer("product_mgt")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer closer.Close()
-	opentracing.SetGlobalTracer(jaegertracer)
-	grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(jaegertracer))
+	// 前処理：preprocessing
+	beforeMessage := fmt.Sprintf("======= [Server Interceptor]  FullMethod is %s ===== Serer is %s", info.FullMethod, info.Server)
+	before(beforeMessage)
 
 	// Invoking the handler to complete the normal execution of a unary RPC.
 	m, err := handler(ctx, req)
 
 	// 後処理：postprocessing
-	log.Printf(" Post Proc Message : %s", m)
+	afterMessage := fmt.Sprintf("Post Proc Message : %s", m)
+	after(afterMessage)
+
 	return m, err
+}
+
+func Ux(opts ...Option) grpc.UnaryServerInterceptor {
+
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+		// 前処理：preprocessing
+		beforeMessage := fmt.Sprintf("======= [Server Interceptor][grpc.UnaryServerInterceptor]  FullMethod is %s ===== Serer is %s", info.FullMethod, info.Server)
+		before(beforeMessage)
+
+		// Invoking the handler to complete the normal execution of a unary RPC.
+		m, err := handler(ctx, req)
+
+		// 後処理：postprocessing
+		afterMessage := fmt.Sprintf("[Server Interceptor][grpc.UnaryServerInterceptor] Post Proc Message : %s", m)
+		after(afterMessage)
+
+		return m, err
+	}
+}
+
+func before(message string){
+	log.Printf(message)
+}
+
+func after(message string){
+	log.Printf(message)
 }

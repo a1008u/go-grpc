@@ -29,15 +29,31 @@ func newWrappedStream(ss grpc.ServerStream) grpc.ServerStream {
 	return &wrappedStream{ss}
 }
 
-func ServerStreamInterceptor(srv interface{}, ss grpc.ServerStream,
+func ServerStreamInterceptor(srv interface{}, stream grpc.ServerStream,
 	info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 
 	log.Println("====== [Server Stream Interceptor] ", info.FullMethod)
 
-	err := handler(srv, newWrappedStream(ss))
+	err := handler(srv, newWrappedStream(stream))
 	if err != nil {
 		log.Printf("RPC failed with error %v", err)
 	}
 	log.Println("====== end ", info.FullMethod)
 	return err
 }
+
+func Sx(opts ...Option) grpc.StreamServerInterceptor {
+
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+
+		log.Println("====== [grpc.StreamServerInterceptor] ", info.FullMethod)
+		err = handler(srv, newWrappedStream(stream))
+		if err != nil {
+			log.Printf("RPC failed with error %v", err)
+		}
+		log.Println("====== end ", info.FullMethod)
+		return err
+	}
+}
+
+

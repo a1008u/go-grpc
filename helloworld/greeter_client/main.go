@@ -10,6 +10,7 @@ import (
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/service"
 	"github.com/a1008u/go-grpc/helloworld/greeter_client/util"
 	"github.com/a1008u/go-grpc/helloworld/tracer"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcopentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
@@ -73,6 +74,7 @@ func grpcClient(w http.ResponseWriter, r *http.Request) {
 	// gRPCコネクションの作成
 	address := util.GetGrcpAddress()
 
+	// tracer
 	jaegertracer, closer, err := tracer.NewTracer("product_mgt")
 	if err != nil {
 		log.Println("eeeerrrrorr")
@@ -81,15 +83,23 @@ func grpcClient(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := grpc.Dial(address, grpc.WithInsecure(),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
-		grpc.WithUnaryInterceptor(grpcMetrics.UnaryClientInterceptor()),
-		grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor),
-		grpc.WithStreamInterceptor(
-			grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
-		),
+		//grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor),
 		grpc.WithUnaryInterceptor(
-			grpcopentracing.UnaryClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+			grpc_middleware.ChainUnaryClient(
+				interceptor.Uac(),
+				grpcMetrics.UnaryClientInterceptor(),
+				grpcopentracing.UnaryClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+			),
 		),
-		)
+		//grpc.WithStreamInterceptor(grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)))
+		grpc.WithStreamInterceptor(
+			grpc_middleware.ChainStreamClient(
+				interceptor.Sci(),
+				grpcMetrics.StreamClientInterceptor(),
+				grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+			),
+		),
+	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
@@ -116,10 +126,27 @@ func grpcClient(w http.ResponseWriter, r *http.Request) {
 func grpcClientStreamServer(w http.ResponseWriter, r *http.Request) {
 	// gRPCコネクションの作成
 	address := util.GetGrcpAddress()
+
+	// tracer
+	jaegertracer, closer, err := tracer.NewTracer("product_mgt")
+	if err != nil {
+		log.Println("eeeerrrrorr")
+	}
+	defer closer.Close()
+
 	conn, err := grpc.Dial(address, grpc.WithInsecure(),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
 		grpc.WithUnaryInterceptor(grpcMetrics.UnaryClientInterceptor()),
-		grpc.WithUnaryInterceptor(interceptor.UnaryClientInterceptor))
+
+		//grpc.WithStreamInterceptor(grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)))
+		grpc.WithStreamInterceptor(
+			grpc_middleware.ChainStreamClient(
+				interceptor.Sci(),
+				grpcMetrics.StreamClientInterceptor(),
+				grpcopentracing.StreamClientInterceptor(grpcopentracing.WithTracer(jaegertracer)),
+			),
+		),
+	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 		os.Exit(1)
